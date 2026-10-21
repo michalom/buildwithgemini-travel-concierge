@@ -1,0 +1,16 @@
+--- frontend/static/index.html
++++ frontend/static/index.html
+@@ -9,7 +9,16 @@
+ <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined">
+ <style>
+   :root { --accent:#e65100; --bg:#f6f8fa; --border:#dfe3e8; }
+   * { box-sizing:border-box; }
++  @keyframes spin { 100% { transform: rotate(360deg); } }
++  @keyframes pulse { 
++    0% { opacity: 0.4; }
++    50% { opacity: 1; }
++    100% { opacity: 0.4; }
++  }
++  .thinking { animation: pulse 1.5s ease-in-out infinite; }
+   body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); display:flex; flex-direction:column; height:100vh; }
+   header { background:var(--accent); color:#fff; padding:.9rem 1.2rem; font-weight:700; }

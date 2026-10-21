@@ -242,6 +242,47 @@ def generate_travel_image(prompt: str, tool_context: ToolContext) -> str:
         return f"Error generating image: {str(e)}"
 
 from google.adk.code_executors import AgentEngineSandboxCodeExecutor
+from a2ui.schema.manager import A2uiSchemaManager
+from a2ui.basic_catalog.provider import BasicCatalog
+from .a2ui_utils import a2ui_callback
+
+schema_manager = A2uiSchemaManager(
+    version="0.8",
+    catalogs=[BasicCatalog.get_config("0.8")],
+)
+
+instruction = schema_manager.generate_system_prompt(
+    role_description="You are a helpful Travel Concierge AI assistant.",
+    workflow_description=(
+        "You help users plan their trips by finding hotels, checking weather, "
+        "providing destination guides, generating destination images/mood boards, "
+        "and managing itineraries. You have access to a database of hotels and "
+        "public tools. Always check the database when users ask about accommodations. "
+        "You also have a secure python code execution sandbox environment. "
+        "Write and execute python to perform calculations, convert formats, "
+        "write files, process data, or any other tasks best solved with programming. "
+        "Analyze the request and return structured UI when appropriate."
+    ),
+    ui_description=(
+        "Keep every surface tiny and flat: ONE Card > ONE Column > a few Text rows. "
+        "Never nest a Card inside a Card. "
+        "Use ONLY these components: Card, Column, Row, Text, and Image. Do not use "
+        "Table or Heading (unsupported), or Buttons, actions, or forms (they do "
+        "nothing in adk web). "
+        "You may include one Image component, but only when you have a public https "
+        "URL for the image (for example the URL an image tool returns after uploading "
+        "to a public bucket). Set the Image url to that exact https link, for example "
+        "{\"Image\": {\"url\": {\"literalString\": \"https://...\"}}}. Never point an "
+        "Image at a bare filename, an artifact name, or a non-http(s) path. If you do "
+        "not have a public URL, add a short Text line noting the image instead. "
+        "No markdown in text; use the usageHint property ('h1', 'h2', 'body') for "
+        "headings and emphasis. "
+        "Output ONLY the raw A2UI JSON array — no prose, and never wrap it in "
+        "<a2a_datapart_json> tags or 'kind'/'data'/'metadata' objects."
+    ),
+    include_schema=True,
+    include_examples=True,
+)
 
 root_agent = Agent(
     name="travel_concierge",
@@ -249,10 +290,7 @@ root_agent = Agent(
         model=MODEL,
         retry_options=types.HttpRetryOptions(attempts=3),
     ),
-    instruction="""You are a helpful Travel Concierge AI assistant. 
-    You help users plan their trips by finding hotels, checking weather, providing destination guides, generating destination images/mood boards, and managing itineraries.
-    You have access to a database of hotels and public tools. Always check the database when users ask about accommodations.
-    You also have a secure python code execution sandbox environment. Write and execute python to perform calculations, convert formats, write files, process data, or any other tasks best solved with programming.""",
+    instruction=instruction,
     tools=[
         get_weather,
         get_current_time,
@@ -266,6 +304,7 @@ root_agent = Agent(
     code_executor=AgentEngineSandboxCodeExecutor(
         agent_engine_resource_name="projects/642983050889/locations/us-east1/reasoningEngines/837364965970018304"
     ),
+    after_model_callback=a2ui_callback,
 )
 
 app = App(
