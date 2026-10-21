@@ -182,6 +182,11 @@ async def chat(req: Request):
         if not got_artifact_update and last_task is not None:
             for artifact in getattr(last_task, "artifacts", None) or []:
                 parts.extend(_extract_parts(artifact.parts))
+                
+            # If the task failed and we still have no parts, check the status message.
+            if not parts and str(last_task.status.state) == "TaskState.failed":
+                if last_task.status.message and last_task.status.message.parts:
+                    parts.extend(_extract_parts(last_task.status.message.parts))
 
     if not parts:
         # The turn produced no text or UI (e.g. the agent only ran tools, or a
